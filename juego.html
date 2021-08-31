@@ -1,0 +1,155 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>Making your first Phaser 3 Game - Part 1</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+var config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    mouse: true,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 0 },
+            debug: false
+        }
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+
+var meteoros;
+var lasers;
+var cursors;
+var mouse;
+var earth;
+var player;
+var gameOver = false;
+var nextFire = 0;
+var fireRate = 200;
+
+    var game = new Phaser.Game(config);
+
+    function preload ()
+    {
+        this.load.image('space', 'assets/space.jpg');
+        this.load.image('meteoro', 'assets/meteoro.png');
+        this.load.image('laser', 'assets/laser.png');
+        this.load.image('earth', 'assets/earth.png');
+        this.load.spritesheet('spaceship', 'assets/spaceship1.png', { frameWidth: 32, frameHeight: 48 });
+    }
+
+    function create ()
+    {
+
+        this.add.image(400, 300, 'space');
+        earth = this.physics.add.sprite(400, 800, 'earth');
+        player = this.physics.add.sprite(400, 300, 'spaceship');
+        cursors = this.input.keyboard.createCursorKeys();
+        mouse = this.input.mousePointer;
+        meteoros = this.physics.add.group({
+            key: 'meteoro',
+            gravity: {y : 100},
+            repeat: 11,
+            setXY: { x: 12, y: 0, stepX: 70 }
+        });
+        meteoros.setVelocityY(50);
+
+        lasers = this.physics.add.group('laser');
+        lasers.enableBody = true;
+        lasers.physicsBodyType = this.physics.arcade;
+
+        this.physics.add.collider(player, meteoros, hitPlayer, null, this);
+        this.physics.add.collider(meteoros, earth, hitEarth, null, this);
+        this.physics.add.collider(lasers, meteoros, hitLaser, null, this);
+    }
+
+    function update ()
+    {
+        player.rotation = calcAngle(player.x, player.y, mouse.position.x, mouse.position.y);
+        //console.log(this.physics);
+        if(gameOver){
+            return;
+        }
+        if(mouse.isDown){
+
+            if(this.time.now > nextFire){
+                var laser = lasers.create(player.x, player.y, 'laser');
+                this.physics.moveTo(laser, mouse.position.x, mouse.position.y, 200);
+                nextFire = this.time.now + fireRate;
+            }
+        }
+        if (cursors.left.isDown)
+        {
+            player.setVelocityX(-160);
+            player.setVelocityY(0);
+
+        }
+        else if (cursors.right.isDown)
+        {
+            player.setVelocityX(160);
+            player.setVelocityY(0);
+
+        }
+        else if(cursors.down.isDown)
+        {
+            player.setVelocityY(160);
+            player.setVelocityX(0);
+
+        }
+        if (cursors.up.isDown)
+        {
+            player.setVelocityY(-160);
+            player.setVelocityX(0);
+        }
+
+    }
+
+    function calcAngle(ax, ay, bx, by){
+        var dy = by - ay;
+        var dx = bx - ax;
+        var tetha  = Math.atan2(dy, dx);
+        //tetha *= 180 / Math.PI;
+        return tetha;
+    }
+
+    function hitPlayer(){
+        this.physics.pause();
+
+        player.setTint(0xff0000);
+
+        gameOver = true;
+    }
+
+    function hitLaser(laser, meteor){
+        laser.disableBody(true, true);
+        meteor.disableBody(true, true);
+    }
+
+    function hitEarth(){
+        this.physics.pause();
+
+        earth.setTint(0xff0000);
+
+        gameOver = true;
+}
+
+</script>
+
+</body>
+</html>
